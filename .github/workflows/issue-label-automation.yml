@@ -1,0 +1,46 @@
+name: Automated Issue Comments
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  comment-on-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on issue based on label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const label = context.payload.label.name;
+            const issueNumber = context.payload.issue.number;
+            
+            let commentBody = '';
+            
+            switch(label) {
+              case 'documentation':
+                commentBody = 'Thank you for flagging this documentation issue. We will update it soon.';
+                break;
+              case 'wontfix':
+                commentBody = 'After review, we have decided not to address this issue at this time.';
+                break;
+              case 'bug':
+                commentBody = 'Thank you for reporting this bug. Our team will investigate and fix it.';
+                break;
+              default:
+                console.log(`No automated comment for label: ${label}`);
+                return;
+            }
+            
+            if (commentBody) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: commentBody
+              });
+              console.log(`Added comment to issue #${issueNumber} for label '${label}'`);
+            }
